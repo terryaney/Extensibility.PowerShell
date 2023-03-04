@@ -1,0 +1,91 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
+  "blocks": [
+    {
+      "alignment": "left",
+      "newline": true,
+      "segments": [
+        {
+          "background": "#ff479c",
+          "foreground": "#ffffff",
+          "leading_diamond": "\ue0b6",
+          "properties": {
+            "folder_icon": "\ue5ff",
+            "folder_separator_icon": "\\",
+            "home_icon": "\uf7db",
+            "style": "agnoster"
+          },
+          "style": "diamond",
+          "template": " \ue5ff {{ .Path }} ",
+          "trailing_diamond": "\ue0b0",
+          "type": "path"
+        },
+        {
+          "background": "#fffb38",
+          "foreground": "#193549",
+          "powerline_symbol": "\ue0b0",
+          "properties": {
+            "fetch_stash_count": true,
+            "fetch_status": true,
+            "fetch_upstream_icon": true,
+            "branch_icon": "\uf418 ",
+            "branch_identical_icon": "",
+            "branch_ahead_icon": " \u2261\u2191 ",
+            "branch_behind_icon": " \u2261\u2193 ",
+            "exclude_folders": [
+                "C:\\\\BTR\\\\Evolution\\\\API",
+                "C:\\\\BTR\\\\Evolution\\\\BTR.Evolution.RBLe\\\\BTR.Evolution.RBLe.Clients",
+                "C:\\\\BTR\\\\Evolution\\\\Websites",
+                "C:\\\\BTR\\\\Evolution\\\\Websites\\\\Admin",
+                "C:\\\\BTR\\\\Evolution\\\\Websites\\\\ESS",
+                "C:\\\\BTR\\\\Evolution\\\\Websites\\\\Personal",
+                "C:\\\\BTR.Legacy\\\\MadHatter.4.1\\\\Websites",
+                "C:\\\\BTR.Legacy\\\\MadHatter.4.1\\\\Websites\\\\ESS",
+                "C:\\\\BTR.Legacy\\\\MadHatter.4.1\\\\Websites\\\\Personal",
+                "C:\\\\BTR.Legacy\\\\MadHatter.4.5\\\\Websites.MadHatterAdmin\\\\Clients"
+              ]
+          },
+          "style": "powerline",
+          "template": " {{ .HEAD }}{{ if gt .Ahead 0}} \u2261{{ .Ahead }}\u2191{{ end }}{{ if gt .Behind 0}} \u2261{{ .Behind }}\u2193{{ end }}{{ if .Working.Changed }} \uf044 {{ .Working.String }}{{ end }}{{ if and (.Staging.Changed) (.Working.Changed) }} |{{ end }}{{ if .Staging.Changed }} \uf046 {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0}} \uf692 {{ .StashCount }}{{ end }}{{ if gt .WorktreeCount 0}} \uf1bb {{ .WorktreeCount }}{{ end }} ",
+          "type": "git"
+        },
+        {
+          "background": "#6CA35E",
+          "foreground": "#ffffff",
+          "powerline_symbol": "\ue0b0",
+          "properties": {
+            "fetch_version": true
+          },
+          "style": "powerline",
+          "template": " \ue70c {{ if .Unsupported }}\uf071{{ else }}{{ .Full }}{{ end }} ",
+          "type": "dotnet"
+        },
+        {
+          "background": "#ffff66",
+          "foreground": "#ffffff",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \uf0e7 ",
+          "type": "root"
+        },
+        {
+          "background": "#2e9599",
+          "background_templates": [
+            "{{ if gt .Code 0 }}#f1184c{{ end }}"
+          ],
+          "foreground": "#ffffff",
+          "powerline_symbol": "\ue0b0",
+          "properties": {
+            "always_enabled": true
+          },
+          "style": "powerline",
+          "template": " \ue23a {{ if gt .Code 0 }}\uf00d{{ else }}\uf42e{{ end }} ",
+          "type": "exit"
+        }
+      ],
+      "type": "prompt"
+    }
+  ],
+  "final_space": true,
+  "version": 2
+}
