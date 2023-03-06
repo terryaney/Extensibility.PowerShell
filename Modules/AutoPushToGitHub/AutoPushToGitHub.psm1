@@ -19,6 +19,16 @@ function git {
     }
 
 	# Run whatever was requested
-	$newCommand = "git.exe $($Args -join ' ')"
+	$newCommand = "git.exe"
+	foreach ($arg in $Args) {
+		if ($arg -match '\s') {
+			$newCommand += ' "' + $arg + '"'
+		}
+		else {
+			$newCommand += ' ' + $arg
+		}
+	}
+
+	# Write-Host $newCommand
 	Invoke-Expression $newCommand		
 }
