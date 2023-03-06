@@ -26,6 +26,8 @@
 Import-Module -Name Terminal-Icons
 
 Import-Module posh-git
+Import-Module AutoPushToGitHub
+
 $GitPromptSettings.EnableStashStatus = $true
 
 # PowerShell parameter completion shim for the dotnet CLI

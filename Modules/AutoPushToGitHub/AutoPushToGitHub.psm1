@@ -1,0 +1,24 @@
+function git {
+    $command = $Args[0]
+
+    # Check if the first argument is "clone"
+    if ($command -eq "push" -and $Args.Length -eq 1) {
+        # Add your custom behavior for the "git clone" command here
+
+		$configValue = Invoke-Expression "git config --get remote.gh.url" | Out-String
+		$configValue = $configValue.Trim()
+
+		if ($configValue -ne "") {
+			Write-Host "Pushing to Github..."
+			$newCommand = "git.exe push gh main"
+			Invoke-Expression $newCommand		
+			Write-Host "Github push complete."
+			Write-Host ""
+			Write-Host "Pushing to origin"
+		}
+    }
+
+	# Run whatever was requested
+	$newCommand = "git.exe $($Args -join ' ')"
+	Invoke-Expression $newCommand		
+}
