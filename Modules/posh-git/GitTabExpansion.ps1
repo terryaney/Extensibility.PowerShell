@@ -525,7 +525,7 @@ function GitTabExpansionInternal($lastBlock, $GitStatus = $null) {
         }
 
         # Handles git ch-b <branch1>
-        "^(?:.*ch-b)\s+(?<branch1>\S*)$" {
+        "^(?:.*ch-b|.*merge-squash|.*sync-with)\s+(?<branch1>\S*)$" {
             gitBranches $matches['branch1'] $true
         }
 
