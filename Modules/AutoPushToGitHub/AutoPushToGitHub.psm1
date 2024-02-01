@@ -1,9 +1,9 @@
-function git {
+function gitOff_UsingPrePushHook {
     $command = $Args[0]
 
-    # Check if the first argument is "clone"
+    # Check if the first argument is "push"
     if ($command -eq "push" -and $Args.Length -eq 1) {
-        # Add your custom behavior for the "git clone" command here
+        # Add your custom behavior for the "git push" command here
 
 		$configValue = Invoke-Expression "git config --get remote.gh.url" | Out-String
 		$configValue = $configValue.Trim()

@@ -41,6 +41,108 @@ Register-ArgumentCompleter -Native -CommandName dotnet -ScriptBlock {
 Set-Alias e code
 Set-Alias ex explorer
 
+
+function UpdateGitSettings {
+	$machineName = $env:COMPUTERNAME
+
+	if ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps") {
+		Write-Host "Pulling Git.Configuration repository..."
+		
+		$previousPath = Get-Location
+
+		# Change to the directory where the repository is located
+		Set-Location -Path 'C:\BTR\Extensibility\Git.Configuration'
+		git pull > $null 2>&1
+
+		# Restore the previous working directory path
+		Set-Location -Path $previousPath
+
+		$sourcePath = "C:\BTR\Extensibility\Git.Configuration"
+		$targetPath = "C:\Users\terry.aney"
+
+		$sourceFiles = Get-ChildItem -Path $sourcePath -File
+		$targetFiles = Get-ChildItem -Path $targetPath -File
+
+		$sourcePath = "C:\BTR\Extensibility\Git.Configuration"
+		$targetPath = "C:\Users\terry.aney"
+
+		$sourceFiles = Get-ChildItem -Path $sourcePath -File -Recurse -Exclude ".git"
+		
+		$filesNotInTarget = @()
+		$newerFilesInSource = @()
+
+		function GenerateTargetFile {
+			param (
+				[Parameter(Mandatory=$true)]
+				[System.IO.FileInfo]$file,
+				
+				[Parameter(Mandatory=$true)]
+				[string]$sourcePath
+			)
+
+			$fileName = $file.FullName.Substring($sourcePath.Length + 1)
+			$targetFile = Join-Path -Path $targetPath -ChildPath $fileName
+
+			return [PSCustomObject]@{
+				Source = $fileName
+				Destination = $targetFile
+			}
+		}
+
+		foreach ($file in $sourceFiles) {
+			$target = GenerateTargetFile $file $sourcePath
+
+			if (Test-Path $target.Destination) {
+				$sourceLastWriteTime = (Get-Item $file.FullName).LastWriteTime
+				$targetLastWriteTime = (Get-Item $target.Destination).LastWriteTime
+				$isNewer = $sourceLastWriteTime -gt $targetLastWriteTime
+				if ($isNewer) {
+					$newerFilesInSource += $file
+				}
+			} else {
+				$filesNotInTarget += $file
+			}
+		}
+
+		if ($filesNotInTarget) {
+			Write-Host ""
+			Write-Host "Adding new files from Git.Configuration repository..."
+			foreach ($file in $filesNotInTarget) {
+				$target = GenerateTargetFile $file $sourcePath
+				Write-Host "`t$($target.Source)"
+				Copy-Item -Path $file.FullName -Destination $target.Destination -Force
+			}
+			Write-Host ""
+		}
+
+		if ($newerFilesInSource) {
+			Write-Host ""
+			Write-Host "Confirm that you want to update the following files from Git.Configuration repository..."
+			foreach ($file in $newerFilesInSource) {
+				$target = GenerateTargetFile $file $sourcePath
+				Write-Host "`t$($target.Source)"
+			}
+			Write-Host ""
+
+			$confirm = Read-Host "Do you want to update these files? (Y/N)"
+
+			if ($confirm -eq "Y" -or $confirm -eq "y") {
+				foreach ($file in $newerFilesInSource) {
+					$target = GenerateTargetFile $file $sourcePath
+					Copy-Item -Path $file.FullName -Destination $target.Destination -Force
+				}
+				Write-Host "Files updated."
+			}
+			else {
+				Write-Host "Files not updated."
+			}
+			Write-Host ""
+		}
+	}
+}
+
+UpdateGitSettings
+
 set-content Function:prompt {
     # Custom prompt following https://bradwilson.io/blog/prompt/powershell  
     try
