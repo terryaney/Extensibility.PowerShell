@@ -41,11 +41,10 @@ Register-ArgumentCompleter -Native -CommandName dotnet -ScriptBlock {
 Set-Alias e code
 Set-Alias ex explorer
 
-
 function UpdateGitSettings {
 	$machineName = $env:COMPUTERNAME
 
-	if (-not $env:VSCODE_TASK -and $host.Name -eq "ConsoleHost" -and ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps")) {
+	if ($env:TERM_PROGRAM -ne "vscode" -and $host.Name -eq "ConsoleHost" -and ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps")) {
 		Write-Host "Pulling Git.Configuration repository..."
 		
 		$previousPath = Get-Location
