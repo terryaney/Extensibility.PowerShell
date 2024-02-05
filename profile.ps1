@@ -45,14 +45,23 @@ Set-Alias ex explorer
 function UpdateGitSettings {
 	$machineName = $env:COMPUTERNAME
 
-	if ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps") {
+	if ($host.Name -eq "ConsoleHost" -and ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps")) {
 		Write-Host "Pulling Git.Configuration repository..."
 		
 		$previousPath = Get-Location
 
 		# Change to the directory where the repository is located
 		Set-Location -Path 'C:\BTR\Extensibility\Git.Configuration'
-		git pull > $null 2>&1
+		
+		$gitErrors = git pull 2>&1
+		if ($gitErrors) {
+			Write-Host ""
+			$filteredErrors = $gitErrors | Where-Object { $_.ToString().StartsWith("error:") }
+			foreach ($line in $filteredErrors) {
+				Write-Host $line.ToString().Replace("error: ", "    ")
+			}
+			Write-Host ""
+		}
 
 		# Restore the previous working directory path
 		Set-Location -Path $previousPath
@@ -150,7 +159,7 @@ set-content Function:prompt {
         # Start with a blank line, for breathing room :1)
         Write-Host ""
 
-        # These can be cleared out by segments before callin gthe ExitSegment
+        # These can be cleared out by segments before calling the HealthSegment
         $ErrorCount = $Error.Count;
         $LastEC = $LASTEXITCODE;
 
