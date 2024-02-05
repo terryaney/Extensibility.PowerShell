@@ -53,11 +53,10 @@ function UpdateGitSettings {
 		# Change to the directory where the repository is located
 		Set-Location -Path 'C:\BTR\Extensibility\Git.Configuration'
 		
-		$gitErrors = git pull 2>&1
+		$gitErrors = git pull 2>&1 | Where-Object { $_.ToString().StartsWith("error:") }
 		if ($gitErrors) {
 			Write-Host ""
-			$filteredErrors = $gitErrors | Where-Object { $_.ToString().StartsWith("error:") }
-			foreach ($line in $filteredErrors) {
+			foreach ($line in $gitErrors) {
 				Write-Host $line.ToString().Replace("error: ", "    ")
 			}
 			Write-Host ""
