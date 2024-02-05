@@ -45,7 +45,7 @@ Set-Alias ex explorer
 function UpdateGitSettings {
 	$machineName = $env:COMPUTERNAME
 
-	if ($host.Name -eq "ConsoleHost" -and ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps")) {
+	if (-not $env:VSCODE_TASK -and $host.Name -eq "ConsoleHost" -and ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps")) {
 		Write-Host "Pulling Git.Configuration repository..."
 		
 		$previousPath = Get-Location
