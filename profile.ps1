@@ -5,6 +5,7 @@
 # 3. https://www.hanselman.com/blog/my-ultimate-powershell-prompt-with-oh-my-posh-and-the-windows-terminal
 #       - Live coding of new segment: https://www.hanselman.com/blog/a-nightscout-segment-for-ohmyposh-shows-my-realtime-blood-sugar-readings-in-my-git-prompt
 # 4. https://github.com/dahlbyk/posh-git
+# 5. https://www.nerdfonts.com/cheat-sheet
 #
 # Ended up writing my own prompt (which behaves/looks like OMP) following Brad Wilson's pattern because of 
 # 'Write-SharedGitSegments' and displaying git status for any nested Shared* repositories.  It was too custom 
@@ -44,7 +45,7 @@ Set-Alias ex explorer
 function UpdateGitSettings {
 	$machineName = $env:COMPUTERNAME
 
-	if ($env:TERM_PROGRAM -ne "vscode" -and $host.Name -eq "ConsoleHost" -and ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps")) {
+	if ($env:SKIP_GITCONFIG -ne "true" -and $host.Name -eq "ConsoleHost" -and ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps")) {
 		Write-Host "Pulling Git.Configuration repository..."
 		
 		$previousPath = Get-Location
@@ -67,12 +68,7 @@ function UpdateGitSettings {
 		$sourcePath = "C:\BTR\Extensibility\Git.Configuration"
 		$targetPath = "C:\Users\terry.aney"
 
-		$sourceFiles = Get-ChildItem -Path $sourcePath -File
-		$targetFiles = Get-ChildItem -Path $targetPath -File
-
-		$sourcePath = "C:\BTR\Extensibility\Git.Configuration"
-		$targetPath = "C:\Users\terry.aney"
-
+		# $targetFiles = Get-ChildItem -Path $targetPath -File
 		$sourceFiles = Get-ChildItem -Path $sourcePath -File -Recurse -Exclude ".git"
 		
 		$filesNotInTarget = @()
@@ -131,7 +127,19 @@ function UpdateGitSettings {
 			}
 			Write-Host ""
 
-			$confirm = Read-Host "Do you want to update these files? (Y/N)"
+			$confirm = Read-Host "Do you want to update these files? (Y)es, (N)o, or Show (D)iffs"
+
+			if ($confirm -eq "D" -or $confirm -eq "d") {
+				foreach ($file in $newerFilesInSource) {
+					$target = GenerateTargetFile $file $sourcePath
+					$sourceFile = $file.FullName
+					$targetFile = $target.Destination
+
+					# Open VS Code to show diffs between the source and target files
+					Start-Process "code" "--diff `"$sourceFile`" `"$targetFile`"" -NoNewWindow
+				}
+				$confirm = Read-Host "Do you want to update these files? (Y/N)"
+			}
 
 			if ($confirm -eq "Y" -or $confirm -eq "y") {
 				foreach ($file in $newerFilesInSource) {
@@ -178,7 +186,7 @@ set-content Function:prompt {
 
         $segmentBackground = "TRANSPARENT";
         $segmentBackground = Write-VSSegment $segmentBackground "#8058bc";
-        $segmentBackground = Write-DotNetSegment $segmentBackground "#c174f2"
+        $segmentBackground = Write-DotNetSegment $segmentBackground "#7455DD" "#C8ECFD"
         $segmentBackground = Write-KubernetesSegment $segmentBackground "#63666A"
         $segmentBackground = Write-AzureSegment $segmentBackground "#0080FF"
         $segmentBackground = Write-GitSegment $segmentBackground "#FFFFFF" "#000000"
@@ -244,7 +252,8 @@ function Write-FolderSegment {
     
     # Home/Drive
     Write-HostColor " $($pathParts[0])\" $Background $Foreground
-    # Folder Iconss for middle path parts
+    
+	# Folder Icons for middle path parts
     for($i=1; $i -le $pathParts.Length - 2; $i++)
     {
         if ( $pathParts[$i] -like 'Evolution' -or $pathParts[$i] -like 'Camelot' ) {
@@ -278,7 +287,7 @@ function Write-VSSegment {
 		[Parameter(Mandatory = $true, Position = 2)] [string] $Background
 	)
 
-    if (get-content variable:\VSPromptEnvironment -ErrorAction Ignore) {
+	if (get-content variable:\VSPromptEnvironment -ErrorAction Ignore) {
         Write-Powerline $Background $PrevBackground
 
         # $([char]0xfb0f)
@@ -291,18 +300,106 @@ function Write-VSSegment {
 function Write-DotNetSegment {
 	param(
 		[Parameter(Mandatory = $true, Position = 1)] [string] $PrevBackground,
-		[Parameter(Mandatory = $true, Position = 2)] [string] $Background
+		[Parameter(Mandatory = $true, Position = 2)] [string] $NetCoreBackground,
+		[Parameter(Mandatory = $true, Position = 3)] [string] $NetFrameworkBackground
 	)
 
     # https://github.com/JanDeDobbeleer/oh-my-posh/blob/main/src/segments/dotnet.go
-    if (($null -ne (Get-Command "dotnet" -ErrorAction Ignore)) -and (hasLanguageFiles "*.sln,*.csproj")) {
-        Write-Powerline $Background $PrevBackground
-        $BackgroundColor = ConvertFrom-Hex $Background;
+    if (($null -ne (Get-Command "dotnet" -ErrorAction Ignore))) {
+		# Define the callback function
+		$callback = {
+			param($parentFolder)
 
-        $dotNetVersion = (& dotnet --version)
-        Write-HostColor " $([char]0xe77f)" $Background "#FFFFFF" 26
-        Write-HostColor " $dotNetVersion " $Background "#FFFFFF"
-        return $Background;
+			if ($null -eq $parentFolder) {
+				return $false
+			}
+
+			$previousPath = Get-Location
+
+			# Change to the directory where the repository is located
+			Set-Location -Path $parentFolder
+			
+			$isGitRepo = Get-IsGitRepo
+
+			# Restore the previous working directory path
+			Set-Location -Path $previousPath
+	
+			# Evaluate the parent folder and return $true or $false
+			return $isGitRepo
+		}
+		$projectFiles = getLanguageFiles "*.csproj" (Get-IsGitRepo) $callback
+
+		if ($projectFiles.Length -gt 0) {
+			$frameworkVersions = @()
+			$coreVersions = @()
+			
+			foreach ($file in $projectFiles) {
+				[xml]$xml = Get-Content -Path $file
+			
+				if ($xml.Project.ToolsVersion) {
+					# Use namespace
+					$namespaceManager = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+					$namespaceManager.AddNamespace("msb", "http://schemas.microsoft.com/developer/msbuild/2003")
+					$targetFrameworkVersion = $xml.SelectSingleNode("//msb:Project/msb:PropertyGroup/msb:TargetFrameworkVersion", $namespaceManager).InnerText
+					$frameworkVersions += $targetFrameworkVersion
+				} else {
+					# No namespace
+					$targetFramework = "v" + $xml.SelectSingleNode("//Project/PropertyGroup/TargetFramework").InnerText.Substring(3)
+					$coreVersions += $targetFramework
+				}
+			}
+
+			if ($coreVersions.Length -eq 0 -and $frameworkVersions.Length -eq 0) {
+				return $PrevBackground;
+			}
+			$coreVersions = $coreVersions | Sort-Object
+			$frameworkVersions = $frameworkVersions | Sort-Object
+
+			if ($coreVersions.Length -gt 0) {
+				Write-Powerline $NetCoreBackground $PrevBackground
+				$newBackground = $NetCoreBackground
+				$PrevBackground = $newBackground
+
+				# VS Code integrated terminal doesn't work with latest '.NET' icon, but Windows Terminal does
+				# I've sent a tweet off to @code, @bridgit and @hanselman, but maybe I need to make a VS Code issue
+				$dotNetIcon = "$([char]0xe77f)"
+				if ($env:TERM_PROGRAM -ne "vscode") {
+					$dotNetIcon = "$([char]0xdb82)$([char]0xdeae)"
+				}
+				Write-HostColor " $dotNetIcon" $newBackground "#FFFFFF" 50
+
+				$versionCounts = $coreVersions | Group-Object
+
+				if ($versionCounts.Values.Count -eq 1) {
+					$versionOutput = $versionCounts[0].Name
+				} else {
+					$versionOutput = ($versionCounts | ForEach-Object { "$($_.Name) ($($_.Count))" }) -join ", "
+				}
+
+				Write-HostColor " $versionOutput " $newBackground "#FFFFFF"
+			}
+
+			if ($frameworkVersions.Length -gt 0) {
+				$newBackground = $NetFrameworkBackground
+				Write-Powerline $newBackground $PrevBackground
+				Write-HostColor " $([char]0xe77f)" $newBackground "#037DE3" 30
+
+				$versionCounts = $frameworkVersions | Group-Object
+
+				if ($versionCounts.Values.Count -eq 1) {
+					$versionOutput = $versionCounts[0].Name
+				} else {
+					$versionOutput = ($versionCounts | ForEach-Object { "$($_.Name) ($($_.Count))" }) -join ", "
+				}
+
+				Write-HostColor " $versionOutput " $newBackground "#037DE3"
+			}
+
+			# $BackgroundColor = ConvertFrom-Hex $Background;
+			# $dotNetVersion = (& dotnet --version)
+
+			return $newBackground;
+		}
     }
     return $PrevBackground;
 }
@@ -314,7 +411,7 @@ function Write-KubernetesSegment {
 	)
 
     # Write the current kubectl context
-    if ((Get-Command "kubectl" -ErrorAction Ignore) -ne $null) {
+    if ($null -ne (Get-Command "kubectl" -ErrorAction Ignore)) {
         $prevEC = $LASTEXITCODE;
         $currentContext = (& kubectl config current-context 2> $null)
 
@@ -444,7 +541,7 @@ function Write-SharedGitSegments {
 
         for($i=0; $i -lt $sharedFolders.Length; $i++)
         {
-            cd $sharedFolders[$i].FullName
+            Set-Location $sharedFolders[$i].FullName
 
             if ( $i -eq 0 ) {
                 Write-Diamond $Background;
@@ -462,11 +559,12 @@ function Write-SharedGitSegments {
                 Write-Powerline "TRANSPARENT" $Background
             }
             
-            cd ..
+            Set-Location ..
         }
 
         if ( $sharedFolders.Length -gt 0 ) {
             Write-Host "";
+			# This global variable is used in other scripts
             $global:GitStatus = Get-GitStatus
         }
     }
@@ -573,10 +671,10 @@ function Write-GitDetails-ChangeStatus {
 }
 
 function Get-IsGitRepo {
-    if ((Get-Command "Get-GitDirectory" -ErrorAction Ignore) -ne $null) {
+    if ($null -ne (Get-Command "Get-GitDirectory" -ErrorAction Ignore)) {
         $gitDir = Get-GitDirectory
 
-        if ($gitDir -ne $null) {
+        if ($null -ne $gitDir) {
             $currentPath = ([string]$pwd);
             
             $testPath = $currentPath.ToLower()
@@ -635,12 +733,12 @@ function Write-HostColor {
 
     $ForegroundColor = ConvertFrom-Hex $Foreground;
 
-    $esc = [char]27
-    $csi = "${esc}["
+	$esc = [char]27
+	$csi = "${esc}["
 
     if ( $Background -eq "TRANSPARENT" ) {
         # Write-Host $Text -ForegroundColor $ForegroundColor -NoNewLine
-        Write-Host "$csi${FontSize};38;2;${ForegroundColor}m$Text${csi}0m" -NoNewLine
+        Write-Host "${csi}${FontSize};38;2;${ForegroundColor}m$Text${csi}0m" -NoNewLine
     }
     else {
         $BackgroundColor = ConvertFrom-Hex $Background;
@@ -649,29 +747,38 @@ function Write-HostColor {
     }
 }
 
-function hasLanguageFiles {
+function getLanguageFiles {
     param(
         [Parameter(Mandatory = $true, Position = 0)] [string] $filePatterns,
-        [Parameter(Mandatory = $false, Position = 1)] [switch] $IncludeParent
-    )
+        [Parameter(Mandatory = $true, Position = 1)] [switch] $searchRecursive,
+		[Parameter(Mandatory = $false, Position = 2)] [ScriptBlock] $includeParentCallback
+	)
     
     $currentFolder = Get-Location
-    
-    while ($currentFolder -ne "") {
-        foreach ($filePath in $filePatterns.Split(',', [StringSplitOptions]::RemoveEmptyEntries)) {
-            if ((Get-ChildItem -ErrorAction Ignore -LiteralPath $currentFolder -Filter $filePath).Count -gt 0) {
-                return $true
-            }
-        }
-        if ( $IncludeParent ) {
-            $currentFolder = Split-Path $currentFolder
-        }
-        else {
-            $currentFolder = ""
-        }
-    }
-    
-    return $false
+
+	if ( $includeParentCallback ) {
+		$parentFolder = $currentFolder
+		while (& $includeParentCallback $parentFolder) {
+			$currentFolder = $parentFolder
+			$parentFolder = Split-Path $currentFolder
+		}
+	}
+
+	$fileList = @()
+	
+	foreach ($pattern in $filePatterns.Split(',', [StringSplitOptions]::RemoveEmptyEntries)) {
+		if ($searchRecursive) {
+			$patternFiles = Get-ChildItem -Path $currentFolder -Filter $pattern -Recurse -File | Where-Object {
+				$_.FullName -notmatch '\\\.git\\' -and $_.FullName -notmatch '\\bin\\' -and $_.FullName -notmatch '\\obj\\'
+			}
+		} else {
+			$patternFiles = Get-ChildItem -Path $currentFolder -Filter $pattern -File
+		}
+
+		$fileList += $patternFiles | ForEach-Object { $_.FullName }	
+	}
+
+    return $fileList
 }
 
 function ConvertFrom-Hex {
