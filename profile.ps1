@@ -334,7 +334,7 @@ function Write-DotNetSegment {
 			$coreVersions = @()
 			
 			foreach ($file in $projectFiles) {
-				[xml]$xml = Get-Content -Path $file
+				[xml]$xml = Get-Content -LiteralPath "$file"
 			
 				if ($xml.Project.ToolsVersion) {
 					# Use namespace
@@ -344,7 +344,13 @@ function Write-DotNetSegment {
 					$frameworkVersions += $targetFrameworkVersion
 				} else {
 					# No namespace
-					$targetFramework = "v" + $xml.SelectSingleNode("//Project/PropertyGroup/TargetFramework").InnerText.Substring(3)
+					try {
+						$targetFramework = "v" + $xml.SelectSingleNode("//Project/PropertyGroup/TargetFramework").InnerText.Substring(3)
+					} catch {
+						Write-Host "Error: $($_.Exception.Message)"
+						Write-Host "XML File: $file"
+						Write-Host "XML Content: $xml"
+					}
 					$coreVersions += $targetFramework
 				}
 			}
