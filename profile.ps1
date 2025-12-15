@@ -44,8 +44,14 @@ Set-Alias ex explorer
 
 function UpdateGitSettings {
 	$machineName = $env:COMPUTERNAME
+    $wtProfileId = $env:WT_PROFILE_ID
 
-	if ($env:SKIP_GITCONFIG -ne "true" -and $host.Name -eq "ConsoleHost" -and ($machineName -eq "tca-hbo" -or $machineName -eq "tca-xps")) {
+	if (
+        $env:SKIP_GITCONFIG -ne "true" -and 
+        $host.Name -eq "ConsoleHost" -and 
+        ($env:USERNAME -eq "20813678" -or $machineName -eq "tca-hbo" -or $machineName -eq "tca-xps") -and 
+        $wtProfileId -ne "{4ebca267-0832-471c-8aea-c556cc829839}"
+    ) {
 		Write-Host "Pulling Git.Configuration repository..."
 		
 		$previousPath = Get-Location
@@ -65,12 +71,13 @@ function UpdateGitSettings {
 		# Restore the previous working directory path
 		Set-Location -Path $previousPath
 
+		<#
 		$sourcePath = "C:\BTR\Extensibility\Git.Configuration"
 		$targetPath = "C:\Users\terry.aney"
 
 		# $targetFiles = Get-ChildItem -Path $targetPath -File
-		$sourceFiles = Get-ChildItem -Path $sourcePath -File -Recurse -Exclude ".git"
-		
+		$sourceFiles = Get-ChildItem -Path $sourcePath -File -Recurse | Where-Object { $_.FullName -notmatch '\\\.git\\' }
+
 		$filesNotInTarget = @()
 		$newerFilesInSource = @()
 
@@ -153,6 +160,7 @@ function UpdateGitSettings {
 			}
 			Write-Host ""
 		}
+		#>
 	}
 }
 
