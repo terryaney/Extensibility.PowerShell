@@ -24,6 +24,11 @@
 # 4. (OPTIONAL) Install git configuration
 #       Read the .gitconfig.README.md to file descriptions and instructions on how to enhance posh-git's GitTabExpansion.ps1 file for custom tab completion requirements
 
+$customModulePath = Join-Path -Path (Split-Path -Parent $PSCommandPath) -ChildPath 'Modules'
+if (-not ($env:PSModulePath -split ';' | Where-Object { $_ -eq $customModulePath })) {
+	$env:PSModulePath = "$customModulePath;$env:PSModulePath"
+}
+
 Import-Module -Name Terminal-Icons
 
 Import-Module posh-git
