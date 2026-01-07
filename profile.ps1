@@ -359,7 +359,16 @@ function Write-DotNetSegment {
 				} else {
 					# No namespace
 					try {
-						$targetFramework = "v" + $xml.SelectSingleNode("//Project/PropertyGroup/TargetFramework").InnerText.Substring(3)
+						$targetFrameworkNode = $xml.SelectSingleNode("//Project/PropertyGroup/TargetFramework")
+						if ($null -ne $targetFrameworkNode) {
+							$targetFramework = "v" + $targetFrameworkNode.InnerText.Substring(3)
+						} else {
+							$targetFrameworksNode = $xml.SelectSingleNode("//Project/PropertyGroup/TargetFrameworks")
+							if ($null -ne $targetFrameworksNode) {
+								$frameworks = $targetFrameworksNode.InnerText.Split(';')
+								$targetFramework = "v" + $frameworks[-1].Trim().Substring(3)
+							}
+						}
 					} catch {
 						Write-Host "Error: $($_.Exception.Message)"
 						Write-Host "XML File: $file"
