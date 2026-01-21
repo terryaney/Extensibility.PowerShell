@@ -51,12 +51,16 @@ function UpdateGitSettings {
 	$machineName = $env:COMPUTERNAME
     $wtProfileId = $env:WT_PROFILE_ID
 
+	# Write-Host "Profile ID: $wtProfileId"
+	# Write-Host "Host Name: $($host.Name)"
+
 	if (
         $env:SKIP_GITCONFIG -ne "true" -and 
+		-not [string]::IsNullOrEmpty($wtProfileId) -and # Skip if programmatically launched without Windows Terminal profile (i.e. Copilot)
         $host.Name -eq "ConsoleHost" -and 
         ($env:USERNAME -eq "20813678" -or $machineName -eq "tca-hbo" -or $machineName -eq "tca-xps") -and 
         $wtProfileId -ne "{4ebca267-0832-471c-8aea-c556cc829839}" -and # Skip for 'PowerShell Core' profile
-		$wtProfileId -ne "{d30f7331-fe8f-437a-b2c4-95f3de1b132d}"   # Skip for CoPilot shell commands
+		$wtProfileId -ne "{d30f7331-fe8f-437a-b2c4-95f3de1b132d}"   # Skip for Copilot CLI shell commands
     ) {
 		Write-Host "Pulling Git.Configuration repository..."
 		
