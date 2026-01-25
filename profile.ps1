@@ -30,7 +30,6 @@ if (-not ($env:PSModulePath -split ';' | Where-Object { $_ -eq $customModulePath
 }
 
 Import-Module -Name Terminal-Icons
-
 Import-Module posh-git
 Import-Module AutoPushToGitHub
 
