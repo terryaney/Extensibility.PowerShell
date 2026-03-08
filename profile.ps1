@@ -45,6 +45,8 @@ Register-ArgumentCompleter -Native -CommandName dotnet -ScriptBlock {
 
 Set-Alias e code
 Set-Alias ex explorer
+function cpr { copilot --continue --yolo }
+function yolo { copilot --yolo }
 
 function UpdateGitSettings {
 	$machineName = $env:COMPUTERNAME
