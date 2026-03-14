@@ -45,8 +45,11 @@ Register-ArgumentCompleter -Native -CommandName dotnet -ScriptBlock {
 
 Set-Alias e code
 Set-Alias ex explorer
+
 function cpr { copilot --continue --yolo }
 function yolo { copilot --yolo }
+function Split-Copilot  { wt -w 0 sp -p "GitHub Copilot CLI" -d $PWD }
+function Split-Claude   { wt -w 0 sp -p "Claude Code" -d $PWD }
 
 function UpdateGitSettings {
 	$machineName = $env:COMPUTERNAME
@@ -61,10 +64,11 @@ function UpdateGitSettings {
         $host.Name -eq "ConsoleHost" -and 
         ($env:USERNAME -eq "20813678" -or $machineName -eq "tca-hbo" -or $machineName -eq "tca-xps") -and 
         $wtProfileId -ne "{4ebca267-0832-471c-8aea-c556cc829839}" -and # Skip for 'PowerShell Core' profile
-		$wtProfileId -ne "{d30f7331-fe8f-437a-b2c4-95f3de1b132d}"   # Skip for Copilot CLI shell commands
+		$wtProfileId -ne "{d30f7331-fe8f-437a-b2c4-95f3de1b132d}" -and # Skip for Copilot CLI shell commands
+		$wtProfileId -ne "{f420a4f3-164e-4243-8a99-57cd44e9fcc2}" # Skip for Claude Code profile
     ) {
 		Write-Host "Pulling Git.Configuration repository..."
-		
+		Write-Host $wtProfileId
 		$previousPath = Get-Location
 
 		# Change to the directory where the repository is located
