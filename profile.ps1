@@ -370,12 +370,13 @@ function Write-DotNetSegment {
 					try {
 						$targetFrameworkNode = $xml.SelectSingleNode("//Project/PropertyGroup/TargetFramework")
 						if ($null -ne $targetFrameworkNode) {
-							$targetFramework = "v" + $targetFrameworkNode.InnerText.Substring(3)
+							$tfm = $targetFrameworkNode.InnerText
+							if ($tfm.Length -ge 3) { $targetFramework = "v" + $tfm.Substring(3) }
 						} else {
 							$targetFrameworksNode = $xml.SelectSingleNode("//Project/PropertyGroup/TargetFrameworks")
 							if ($null -ne $targetFrameworksNode) {
-								$frameworks = $targetFrameworksNode.InnerText.Split(';')
-								$targetFramework = "v" + $frameworks[-1].Trim().Substring(3)
+								$frameworks = @($targetFrameworksNode.InnerText.Split(';') | Where-Object { $_.Trim().Length -ge 3 })
+								if ($frameworks.Count -gt 0) { $targetFramework = "v" + $frameworks[-1].Trim().Substring(3) }
 							}
 						}
 					} catch {
